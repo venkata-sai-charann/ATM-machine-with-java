@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Bus Ticketing</title>
+</head>
+<body>
+    <h2>Select a Bus</h2>
+    <form id="bookForm">
+        <input type="text" placeholder="Your Name" id="userName" required><br>
+        <select id="busId">
+            {% for bus in buses %}
+                <option value="{{ bus[0] }}">{{ bus[1] }} - {{ bus[2] }}</option>
+            {% endfor %}
+        </select><br>
+        <button type="submit">Book Now</button>
+    </form>
+
+    <script src="https://js.stripe.com/v3/"></script>
+    <script>
+        document.getElementById('bookForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('userName').value;
+            const busId = document.getElementById('busId').value;
+
+            const res = await fetch('/book', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_name: name, bus_id: busId })
+            });
+            const data = await res.json();
+
+            const stripe = Stripe('your_stripe_publishable_key');
+            stripe.confirmCardPayment(data.clientSecret, {
+                payment_method: {
+                    card: {
+                        number: '4242424242424242',
+                        exp_month: 12,
+                        exp_year: 2025,
+                        cvc: '123'
+                    }
+                }
+            }).then(async (result) => {
+                if (result.paymentIntent.status === 'succeeded') {
+                    await fetch('/confirm', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            user_name: name,
+                            bus_id: busId,
+                            seat_no: 1,
+                            payment_id: result.paymentIntent.id
+                        });
+                    });
+                    alert("Booking confirmed!");
+                }
+            });
+        });
+    </script>
+</body>
+</html>
