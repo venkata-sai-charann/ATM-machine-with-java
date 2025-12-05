@@ -1,0 +1,141 @@
+import java.util.*;
+
+class Account {
+    private String accountNumber;
+    private int pin;
+    private double balance;
+
+    public Account(String accountNumber, int pin, double balance) {
+        this.accountNumber = accountNumber;
+        this.pin = pin;
+        this.balance = balance;
+    }
+
+    public String getAccountNumber() {
+        return accountNumber;
+    }
+
+    public boolean validatePin(int inputPin) {
+        return this.pin == inputPin;
+    }
+
+    public double getBalance() {
+        return balance;
+    }
+
+    public void deposit(double amount) {
+        if (amount > 0) balance += amount;
+    }
+
+    public boolean withdraw(double amount) {
+        if (amount > 0 && amount <= balance) {
+            balance -= amount;
+            return true;
+        }
+        return false;
+    }
+}
+
+class Bank {
+    private Map<String, Account> accounts = new HashMap<>();
+
+    public void addAccount(Account acc) {
+        accounts.put(acc.getAccountNumber(), acc);
+    }
+
+    public Account getAccount(String accNumber) {
+        return accounts.get(accNumber);
+    }
+}
+
+class ATMEngine {
+    private Bank bank;
+    private Scanner scanner = new Scanner(System.in);
+
+    public ATMEngine(Bank bank) {
+        this.bank = bank;
+    }
+
+    public void start() {
+        System.out.println("===== Welcome to OOP ATM =====");
+
+        Account loggedIn = authenticate();
+        if (loggedIn != null) {
+            runSession(loggedIn);
+        }
+    }
+
+    private Account authenticate() {
+        System.out.print("Enter Account Number: ");
+        String accNum = scanner.nextLine();
+
+        Account acc = bank.getAccount(accNum);
+        if (acc == null) {
+            System.out.println("Account not found!");
+            return null;
+        }
+
+        System.out.print("Enter PIN: ");
+        int pin = Integer.parseInt(scanner.nextLine());
+
+        if (!acc.validatePin(pin)) {
+            System.out.println("Incorrect PIN!");
+            return null;
+        }
+
+        return acc;
+    }
+
+    private void showMenu() {
+        System.out.println("\n===== ATM Menu =====");
+        System.out.println("1. Check Balance");
+        System.out.println("2. Deposit");
+        System.out.println("3. Withdraw");
+        System.out.println("4. Exit");
+        System.out.print("Choose: ");
+    }
+
+    private void runSession(Account acc) {
+        boolean running = true;
+
+        while (running) {
+            showMenu();
+            int choice = Integer.parseInt(scanner.nextLine());
+
+            switch (choice) {
+                case 1 -> System.out.println("Balance: $" + acc.getBalance());
+                case 2 -> {
+                    System.out.print("Deposit amount: ");
+                    double d = Double.parseDouble(scanner.nextLine());
+                    acc.deposit(d);
+                    System.out.println("Deposit successful!");
+                }
+                case 3 -> {
+                    System.out.print("Withdraw amount: ");
+                    double w = Double.parseDouble(scanner.nextLine());
+                    if (acc.withdraw(w))
+                        System.out.println("Withdraw successful!");
+                    else
+                        System.out.println("Insufficient Balance!");
+                }
+                case 4 -> {
+                    System.out.println("Goodbye!");
+                    running = false;
+                }
+                default -> System.out.println("Invalid option!");
+            }
+        }
+    }
+}
+
+public class ATM {   // <-- THIS IS THE MAIN PUBLIC CLASS
+    public static void main(String[] args) {
+
+        Bank bank = new Bank();
+        bank.addAccount(new Account("1001", 1234, 5000));
+        bank.addAccount(new Account("2002", 4321, 3000));
+
+        ATMEngine atm = new ATMEngine(bank);
+        atm.start();
+    }
+}
